@@ -1,0 +1,44 @@
+name: Build LineageOS 16 on Crave
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Workflow
+        uses: actions/checkout@v4
+
+      - name: Setup Crave CLI
+        run: |
+          mkdir -p bin
+          curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s -- --version latest
+          mv crave bin/
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+
+      - name: Create Crave Config
+        run: |
+          # Direct workspace mein config banao
+          echo '${{ secrets.CRAVE_CONF }}' > crave.conf
+          # Backup ke liye home mein bhi rakho
+          mkdir -p ~/.crave
+          cp crave.conf ~/.crave/crave.conf
+
+      - name: Run Build on Crave
+        run: |
+          # Yahan humne -c flag add kiya hai config file ke liye
+          crave -c crave.conf run -- "
+            # LOS 16 initialization
+            repo init -u https://github.com/LineageOS/android.git -b lineage-16.0 --depth=1 &&
+            
+            # Sync
+            repo sync -c -j\$(nproc --all) --force-sync --no-clone-bundle --no-tags &&
+            
+            # Clone Trees (Make sure paths are correct)
+            git clone https://github.com/ansh-m14x/android-recovery-OP4C7D -b main device/oppo/OP4C7D &&
+            
+            # Build
+            source build/envsetup.sh &&
+            lunch lineage_OP4C7D-userdebug &&
+            mka bacon -j\$(nproc --all)
+          "
