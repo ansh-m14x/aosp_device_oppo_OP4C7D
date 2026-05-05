@@ -31,27 +31,37 @@ TARGET_NO_BOOTLOADER := true
 # Display
 TARGET_SCREEN_DENSITY := 320
 
-# Kernel
+# Kernel Parameters
 BOARD_BOOTIMG_HEADER_VERSION := 1
 BOARD_KERNEL_BASE := 0x40078000
 BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 buildvariant=user
 BOARD_KERNEL_PAGESIZE := 2048
 BOARD_RAMDISK_OFFSET := 0x11a88000
 BOARD_KERNEL_TAGS_OFFSET := 0x07808000
+
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOTIMG_HEADER_VERSION)
 BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_KERNEL_TAGS_OFFSET)
 BOARD_KERNEL_IMAGE_NAME := Image
+
+# Kernel - Prebuilt vs Inline Configuration
+TARGET_FORCE_PREBUILT_KERNEL := true
+
+ifeq ($(TARGET_FORCE_PREBUILT_KERNEL),true)
+# Prebuilt Kernel Binary Paths (Ensure folder matches name 'prebuilt')
+TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/kernel
+BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img
+BOARD_PREBUILT_DTBIMAGE := $(DEVICE_PATH)/prebuilt/dtb
+
+# MediaTek Prebuilt specific switches
+BOARD_KERNEL_SEPARATED_DTBO := false
+BOARD_INCLUDE_RECOVERY_DTBO := false
+else
+# Inline Source Configurations
 BOARD_KERNEL_SEPARATED_DTBO := true
+BOARD_INCLUDE_RECOVERY_DTBO := true
 TARGET_KERNEL_CONFIG := OP4C7D_defconfig
 TARGET_KERNEL_SOURCE := kernel/oppo/OP4C7D
-
-# Kernel - prebuilt
-TARGET_FORCE_PREBUILT_KERNEL := true
-ifeq ($(TARGET_FORCE_PREBUILT_KERNEL),true)
-TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilts/kernel
-BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilts/dtbo.img
-BOARD_KERNEL_SEPARATED_DTBO := 
 endif
 
 # Partitions
@@ -67,21 +77,20 @@ TARGET_BOARD_PLATFORM := mt6765
 TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
 TARGET_VENDOR_PROP += $(DEVICE_PATH)/vendor.prop
 
-# Recovery
+# Recovery & Filesystems
 TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.mt6765
-BOARD_INCLUDE_RECOVERY_DTBO := true
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 
-# Security patch level
+# Security Patch Level
 VENDOR_SECURITY_PATCH := 2021-08-01
 
-# Verified Boot
+# Verified Boot (AVB)
 BOARD_AVB_ENABLE := true
 BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 3
 
 # VINTF
 DEVICE_MANIFEST_FILE += $(DEVICE_PATH)/manifest.xml
 
-# Inherit the proprietary files
+# Inherit the proprietary vendor configurations
 include vendor/oppo/OP4C7D/BoardConfigVendor.mk
